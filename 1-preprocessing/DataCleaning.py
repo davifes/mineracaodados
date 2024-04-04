@@ -13,7 +13,7 @@ def main():
     #features = ['age', 'Medu', 'Fedu', 'traveltime', 'studytime', 'failures', 'famrel', 'freetime', 'goout', 'Dalc', 'Walc', 'health',
     #'absences', 'G1', 'G2', 'G3'] 
     output_file = 'C:\Users\LENOVO\OneDrive - ifsp.edu.br\Engenharia de Computação\mineração\base de dados\mineracaodados\0-datasets\studentClear.csv'
-    input_file = 'D:testDataCleaning.csv'
+    input_file = 'C:\Users\LENOVO\OneDrive - ifsp.edu.br\Engenharia de Computação\mineração\base de dados\mineracaodados\0-datasets\testDataCleaning.csv'
     df = pd.read_csv(input_file,         # Nome do arquivo com dados
                      names = names,      # Nome das colunas 
                      usecols = features, # Define as colunas que serão  utilizadas
