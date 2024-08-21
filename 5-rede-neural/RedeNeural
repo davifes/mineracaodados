@@ -1,0 +1,106 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+from sklearn.neural_network import MLPClassifier
+import itertools
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    plt.figure()
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+def main():
+    # Load student data and store in dataframe
+    input_file = 'student-por.csv'
+    names = ['school', 'sex', 'age', 'address', 'famsize', 'Pstatus', 'Medu', 'Fedu', 'Mjob', 'Fjob',
+             'reason', 'guardian', 'traveltime', 'studytime', 'failures', 'schoolsup', 'famsup', 'paid', 
+             'activities', 'nursery', 'higher', 'internet', 'romantic', 'famrel', 'freetime', 'goout', 
+             'Dalc', 'Walc', 'health', 'absences', 'G1', 'G2', 'G3', 'situation']
+    
+    features = ['age', 'Medu', 'Fedu', 'traveltime', 'studytime', 'failures', 'famrel', 'freetime', 
+                'goout', 'Dalc', 'Walc', 'health', 'absences', 'G1', 'G2', 'G3'] 
+    
+    target = 'situation'
+
+    # Read data
+    df = pd.read_csv(input_file, names=names, delimiter=';', header=0)
+
+    # Preprocessing
+    le = LabelEncoder()
+    for column in df.select_dtypes(include=['object']).columns:
+        df[column] = le.fit_transform(df[column])
+
+    # Separate features and target
+    X = df[features].values
+    y = df[target].values
+    print("Total samples: {}".format(X.shape[0]))
+
+    # Split the data - 75% train, 25% test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=1)
+    print("Total train samples: {}".format(X_train.shape[0]))
+    print("Total test  samples: {}".format(X_test.shape[0]))
+
+    # Scale the X data using Z-score
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+        
+    # STEP 1 - TESTS USING neural network classifier
+    mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=1)
+    mlp.fit(X_train, y_train)
+
+    # Calculate cross-validation score
+    cv_scores = cross_val_score(mlp, X, y, cv=5)  # 5-fold cross-validation
+    print("Cross-validation scores: ", cv_scores)
+    print("Mean cross-validation score: {:.2f}%".format(cv_scores.mean() * 100))
+    print("Standard deviation of cross-validation scores: {:.2f}".format(cv_scores.std()))
+
+    # Make predictions on the test dataset
+    y_hat_test = mlp.predict(X_test)
+
+    # Get test accuracy score
+    accuracy = accuracy_score(y_test, y_hat_test)*100
+    f1 = f1_score(y_test, y_hat_test, average='macro')
+    print("Accuracy MLPClassifier: {:.2f}%".format(accuracy))
+    print("F1 Score MLPClassifier: {:.2f}".format(f1))
+
+    # Get test confusion matrix
+    cm = confusion_matrix(y_test, y_hat_test)        
+    plot_confusion_matrix(cm, le.classes_, False, "Confusion Matrix - MLPClassifier")      
+    plot_confusion_matrix(cm, le.classes_, True, "Confusion Matrix - MLPClassifier normalized")  
+    plt.show()
+
+if __name__ == "__main__":
+    main()

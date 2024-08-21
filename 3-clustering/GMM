@@ -1,0 +1,86 @@
+# Loading the required modules 
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.mixture import GaussianMixture
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import silhouette_score
+import matplotlib.pyplot as plt
+
+def plot_samples(projected, labels, title):
+    """Plot the projected samples with different colors for different labels."""
+    fig = plt.figure()
+    u_labels = np.unique(labels)
+    for i in u_labels:
+        plt.scatter(projected[labels == i, 0], projected[labels == i, 1], label=f'Cluster {i}',
+                    edgecolor='none', alpha=0.5, cmap=plt.cm.get_cmap('tab10', len(u_labels)))
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    plt.legend()
+    plt.title(title)
+
+from sklearn.metrics import silhouette_score
+
+def main():
+    # Load student data and store in dataframe
+    input_file = 'student-por.csv'
+    names = ['school', 'sex', 'age', 'address', 'famsize', 'Pstatus', 'Medu', 'Fedu', 'Mjob', 'Fjob',
+             'reason', 'guardian', 'traveltime', 'studytime', 'failures', 'schoolsup', 'famsup', 'paid', 
+             'activities', 'nursery', 'higher', 'internet', 'romantic', 'famrel', 'freetime', 'goout', 
+             'Dalc', 'Walc', 'health', 'absences', 'G1', 'G2', 'G3', 'situation']
+    
+    features = ['age', 'Medu', 'Fedu', 'traveltime', 'studytime', 'failures', 'famrel', 'freetime', 
+                'goout', 'Dalc', 'Walc', 'health', 'absences', 'G1', 'G2', 'G3'] 
+
+    target = 'situation'
+
+    # Read data
+    df = pd.read_csv(input_file, names=names, delimiter=';', header=0)
+    
+    # Preprocessing
+    le = LabelEncoder()
+    for column in df.select_dtypes(include=['object']).columns:
+        df[column] = le.fit_transform(df[column])
+    
+    # Separate features and target
+    X = df[features].values
+    y = df[target].values
+    
+    # Scale the X data using Z-score
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # Transform the data using PCA
+    pca = PCA(n_components=2)
+    projected = pca.fit_transform(X_scaled)
+    print("Explained variance ratio by PCA components:", pca.explained_variance_ratio_)
+    print("Original data shape:", X.shape)
+    print("Projected data shape:", projected.shape)
+    
+    # Applying K-Means clustering
+    kmeans = KMeans(n_clusters=2, random_state=42)
+    kmeans_labels = kmeans.fit_predict(projected)
+    
+    # Applying Gaussian Mixture Model
+    gmm = GaussianMixture(n_components=3, random_state=42)
+    gmm_labels = gmm.fit_predict(projected)
+    
+    # Calculate Silhouette Score for K-Means
+    kmeans_silhouette = silhouette_score(projected, kmeans_labels)
+    print(f"K-Means Silhouette Score: {kmeans_silhouette}")
+
+    # Calculate Silhouette Score for GMM
+    gmm_silhouette = silhouette_score(projected, gmm_labels)
+    print(f"GMM Silhouette Score: {gmm_silhouette}")
+    
+    # Visualize K-Means results
+    plot_samples(projected, kmeans_labels, 'K-Means Clustering')
+
+    # Visualize GMM results
+    plot_samples(projected, gmm_labels, 'Gaussian Mixture Model Clustering')
+
+    plt.show()
+
+if __name__ == "__main__":
+    main()
